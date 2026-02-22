@@ -1,0 +1,1231 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Dashboard — Satiate</title>
+
+  <!-- Fonts -->
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@300;400;500;600;700&family=DM+Sans:ital,opsz,wght@0,9..40,300;0,9..40,400;0,9..40,500;0,9..40,600;1,9..40,400&display=swap" rel="stylesheet" />
+  <style>@import url('https://fonts.cdnfonts.com/css/fk-grotesk');</style>
+
+  <!-- Tailwind CDN -->
+  <script src="https://cdn.tailwindcss.com"></script>
+  <script>
+    tailwind.config = {
+      theme: {
+        extend: {
+          colors: {
+            cream:       '#F9F7F4',
+            'cream-2':   '#F2EFE9',
+            teal:        '#20B8CD',
+            'teal-lt':   '#74E4F2',
+            'teal-pale': '#E0F8FB',
+            navy:        '#1C2B3A',
+            sand:        '#C4A882',
+            'sand-lt':   '#EDE4D8',
+          },
+          fontFamily: {
+            display: ['"FK Grotesk"', '"Space Grotesk"', 'sans-serif'],
+            body:    ['"DM Sans"', 'Inter', 'sans-serif'],
+          },
+        }
+      }
+    }
+  </script>
+
+  <style>
+    /* ── Reset ── */
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+    html, body { height: 100%; }
+    body {
+      background: #F9F7F4;
+      font-family: 'DM Sans', Inter, sans-serif;
+      color: #1C2B3A;
+      overflow-x: hidden;
+    }
+
+    /* ── Grain overlay (global, fixed) ── */
+    body::before {
+      content: '';
+      position: fixed;
+      inset: -50%;
+      width: 200%; height: 200%;
+      background-image: url("data:image/svg+xml,%3Csvg viewBox='0 0 512 512' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.8' numOctaves='4' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)'/%3E%3C/svg%3E");
+      opacity: 0.045;
+      pointer-events: none;
+      z-index: 9999;
+    }
+
+    /* ── Typography helpers ── */
+    .font-display { font-family: 'FK Grotesk', 'Space Grotesk', sans-serif; }
+    .section-label {
+      font-size: 11px;
+      font-weight: 600;
+      letter-spacing: 0.12em;
+      text-transform: uppercase;
+      color: #20B8CD;
+    }
+
+    /* ── Navbar ── */
+    .nav-glass {
+      background: rgba(249,247,244,0.84);
+      backdrop-filter: blur(18px);
+      -webkit-backdrop-filter: blur(18px);
+      border-bottom: 1px solid rgba(28,43,58,0.06);
+    }
+
+    /* ── Buttons ── */
+    .btn-ghost {
+      border: 1.5px solid rgba(28,43,58,0.18);
+      color: #1C2B3A;
+      background: transparent;
+      cursor: pointer;
+      transition: border-color 0.2s ease, color 0.2s ease, background 0.2s ease;
+    }
+    .btn-ghost:hover { border-color: #20B8CD; color: #20B8CD; background: rgba(32,184,205,0.04); }
+    .btn-ghost:focus-visible { outline: 2px solid #20B8CD; outline-offset: 3px; }
+
+    /* ── Main dashboard grid ── */
+    .dashboard-main {
+      height: calc(100vh - 64px);
+      margin-top: 64px;
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      overflow: hidden;
+    }
+
+    /* ══════════════════════════════
+       LEFT PANEL — Figure
+    ══════════════════════════════ */
+    .figure-panel {
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      padding: 32px 24px;
+      position: relative;
+      border-right: 1px solid rgba(28,43,58,0.06);
+      overflow: hidden;
+    }
+    .figure-panel::before {
+      content: '';
+      position: absolute;
+      inset: 0;
+      background: radial-gradient(ellipse at 50% 55%, rgba(32,184,205,0.06) 0%, transparent 65%);
+      pointer-events: none;
+    }
+    .figure-wrapper {
+      position: relative;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      gap: 28px;
+    }
+    .figure-glow {
+      position: absolute;
+      inset: -40%;
+      border-radius: 50%;
+      background: radial-gradient(circle, rgba(32,184,205,0.13) 0%, transparent 70%);
+      transition: background 1.2s cubic-bezier(0.34,1.56,0.64,1);
+      pointer-events: none;
+      z-index: 0;
+    }
+    #figure-svg {
+      position: relative;
+      z-index: 1;
+      width: 175px;
+      height: auto;
+    }
+    #fill-rect {
+      transition: transform 1.2s cubic-bezier(0.34,1.56,0.64,1);
+    }
+
+    /* ── Stat pills ── */
+    .stat-pills {
+      display: flex;
+      gap: 10px;
+      flex-wrap: wrap;
+      justify-content: center;
+      position: relative;
+      z-index: 1;
+    }
+    .stat-pill {
+      background: rgba(255,255,255,0.75);
+      border: 1px solid rgba(28,43,58,0.07);
+      border-radius: 14px;
+      padding: 10px 16px;
+      text-align: center;
+      min-width: 76px;
+      box-shadow: 0 2px 12px rgba(28,43,58,0.05);
+    }
+    .stat-val {
+      font-family: 'FK Grotesk', 'Space Grotesk', sans-serif;
+      font-size: 20px;
+      font-weight: 700;
+      color: #1C2B3A;
+      letter-spacing: -0.03em;
+      line-height: 1;
+    }
+    .stat-val.teal { color: #20B8CD; }
+    .stat-lbl {
+      font-size: 10px;
+      color: rgba(28,43,58,0.60);
+      margin-top: 4px;
+      letter-spacing: 0.06em;
+      text-transform: uppercase;
+    }
+
+    /* ══════════════════════════════
+       RIGHT PANEL — Orb + Meal Log
+    ══════════════════════════════ */
+    .right-panel {
+      display: flex;
+      flex-direction: column;
+      overflow: hidden;
+    }
+
+    /* ── Orb zone ── */
+    .orb-zone {
+      flex: 0 0 auto;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      padding: 36px 24px 28px;
+      border-bottom: 1px solid rgba(28,43,58,0.06);
+      background: rgba(249,247,244,0.5);
+      position: relative;
+      gap: 16px;
+    }
+
+    /* ── The Orb ── */
+    #orb {
+      position: relative;
+      width: 120px;
+      height: 120px;
+      border-radius: 50%;
+    }
+
+    /* Orb animation layers — all absolute, centered on orb */
+    .orb-pulse-ring,
+    .orb-arc-svg,
+    .orb-ripple {
+      position: absolute;
+      inset: 0;
+      border-radius: 50%;
+      display: none;
+      pointer-events: none;
+    }
+
+    /* Mic button fills the orb */
+    #mic-btn {
+      position: absolute;
+      inset: 0;
+      z-index: 2;
+      border-radius: 50%;
+      border: none;
+      cursor: pointer;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      background: #F9F7F4;
+      box-shadow:
+        0 0 0 2px rgba(32,184,205,0.20),
+        0 0 28px rgba(32,184,205,0.32),
+        inset 0 1px 0 rgba(255,255,255,0.85);
+      transition: background 0.35s ease, box-shadow 0.35s ease, transform 0.18s cubic-bezier(0.34,1.56,0.64,1);
+    }
+    #mic-btn:not(:disabled):hover {
+      box-shadow:
+        0 0 0 2px rgba(32,184,205,0.35),
+        0 0 40px rgba(32,184,205,0.45),
+        inset 0 1px 0 rgba(255,255,255,0.85);
+    }
+    #mic-btn:not(:disabled):active { transform: scale(0.96); }
+    #mic-btn:disabled { cursor: not-allowed; }
+
+    /* ── State: IDLE ── */
+    #orb[data-state="IDLE"] #mic-btn {
+      background: #F9F7F4;
+      box-shadow:
+        0 0 0 2px rgba(32,184,205,0.20),
+        0 0 28px rgba(32,184,205,0.32),
+        inset 0 1px 0 rgba(255,255,255,0.85);
+    }
+
+    /* ── State: LISTENING / LISTENING_ANSWER ── */
+    #orb[data-state="LISTENING"] #mic-btn,
+    #orb[data-state="LISTENING_ANSWER"] #mic-btn {
+      background: rgba(32,184,205,0.12);
+      box-shadow:
+        0 0 0 2px rgba(32,184,205,0.40),
+        0 0 32px rgba(32,184,205,0.50);
+    }
+    #orb[data-state="LISTENING"] .orb-pulse-ring,
+    #orb[data-state="LISTENING_ANSWER"] .orb-pulse-ring { display: block; }
+
+    @keyframes orbPulse {
+      0%   { transform: scale(1);    opacity: 0.65; }
+      100% { transform: scale(1.55); opacity: 0;    }
+    }
+    .orb-pulse-ring {
+      border: 2px solid rgba(32,184,205,0.55);
+      animation: orbPulse 1.4s cubic-bezier(0.34,1.56,0.64,1) infinite;
+    }
+
+    /* ── State: PROCESSING_STT / PROCESSING_STT_ANSWER / GEMINI_* ── */
+    #orb[data-state="PROCESSING_STT"] #mic-btn,
+    #orb[data-state="PROCESSING_STT_ANSWER"] #mic-btn,
+    #orb[data-state="GEMINI_CLARIFYING"] #mic-btn,
+    #orb[data-state="GEMINI_FINALIZING"] #mic-btn {
+      background: rgba(32,184,205,0.06);
+      box-shadow:
+        0 0 0 1px rgba(32,184,205,0.18),
+        0 0 18px rgba(32,184,205,0.18);
+    }
+    #orb[data-state="PROCESSING_STT"] .orb-arc-svg,
+    #orb[data-state="PROCESSING_STT_ANSWER"] .orb-arc-svg,
+    #orb[data-state="GEMINI_CLARIFYING"] .orb-arc-svg,
+    #orb[data-state="GEMINI_FINALIZING"] .orb-arc-svg { display: block; }
+
+    @keyframes orbSpin { to { transform: rotate(360deg); } }
+    .orb-arc-svg {
+      border-radius: 0; /* SVG not a circle container */
+      animation: orbSpin 2s linear infinite;
+    }
+
+    /* ── State: TTS_SPEAKING_QUESTION / TTS_SPEAKING_RESULT ── */
+    #orb[data-state="TTS_SPEAKING_QUESTION"] #mic-btn,
+    #orb[data-state="TTS_SPEAKING_RESULT"] #mic-btn {
+      background: rgba(32,184,205,0.10);
+      box-shadow:
+        0 0 0 2px rgba(32,184,205,0.35),
+        0 0 36px rgba(32,184,205,0.55);
+    }
+    #orb[data-state="TTS_SPEAKING_QUESTION"] .orb-ripple,
+    #orb[data-state="TTS_SPEAKING_RESULT"] .orb-ripple { display: block; }
+
+    @keyframes orbRipple {
+      0%   { transform: scale(1);    opacity: 0.55; }
+      100% { transform: scale(1.85); opacity: 0;    }
+    }
+    .orb-ripple {
+      border: 1.5px solid rgba(32,184,205,0.5);
+      animation: orbRipple 1.8s ease-out infinite;
+    }
+    .orb-ripple-a { animation-delay: 0s;     }
+    .orb-ripple-b { animation-delay: -0.6s;  }
+    .orb-ripple-c { animation-delay: -1.2s;  }
+
+    /* ── Orb icon visibility — CSS only ── */
+    .orb-icon {
+      display: none;
+      align-items: center;
+      justify-content: center;
+    }
+    /* IDLE → mic */
+    #orb[data-state="IDLE"] .icon-mic { display: flex; }
+    /* LISTENING / LISTENING_ANSWER → waveform */
+    #orb[data-state="LISTENING"]        .icon-wave { display: flex; }
+    #orb[data-state="LISTENING_ANSWER"] .icon-wave { display: flex; }
+    /* PROCESSING / GEMINI → dots */
+    #orb[data-state="PROCESSING_STT"]        .icon-process { display: flex; }
+    #orb[data-state="PROCESSING_STT_ANSWER"] .icon-process { display: flex; }
+    #orb[data-state="GEMINI_CLARIFYING"]     .icon-process { display: flex; }
+    #orb[data-state="GEMINI_FINALIZING"]     .icon-process { display: flex; }
+    /* TTS_SPEAKING → speaker */
+    #orb[data-state="TTS_SPEAKING_QUESTION"] .icon-speak { display: flex; }
+    #orb[data-state="TTS_SPEAKING_RESULT"]   .icon-speak { display: flex; }
+
+    /* ── Orb waveform bars ── */
+    @keyframes waveBar {
+      0%, 100% { transform: scaleY(0.22); }
+      50%       { transform: scaleY(1);   }
+    }
+    .orb-wave-bar {
+      width: 3px;
+      height: 18px;
+      background: #20B8CD;
+      border-radius: 2px;
+      transform-origin: bottom center;
+      animation: waveBar 0.75s ease-in-out infinite;
+    }
+    .icon-wave { gap: 4px; }
+    .orb-wave-bar:nth-child(1) { animation-delay: 0s;    }
+    .orb-wave-bar:nth-child(2) { animation-delay: 0.10s; }
+    .orb-wave-bar:nth-child(3) { animation-delay: 0.22s; }
+    .orb-wave-bar:nth-child(4) { animation-delay: 0.08s; }
+    .orb-wave-bar:nth-child(5) { animation-delay: 0.18s; }
+
+    /* ── Orb processing dots ── */
+    @keyframes processDot {
+      0%, 80%, 100% { transform: scale(0.55); opacity: 0.3; }
+      40%           { transform: scale(1);    opacity: 1;   }
+    }
+    .process-dot {
+      width: 7px; height: 7px;
+      border-radius: 50%;
+      background: #20B8CD;
+      animation: processDot 1.2s ease-in-out infinite;
+    }
+    .icon-process { gap: 5px; }
+    .process-dot:nth-child(1) { animation-delay: 0s;    }
+    .process-dot:nth-child(2) { animation-delay: 0.20s; }
+    .process-dot:nth-child(3) { animation-delay: 0.40s; }
+
+    /* ── Status label ── */
+    #status-label {
+      font-size: 11px;
+      font-weight: 600;
+      letter-spacing: 0.1em;
+      text-transform: uppercase;
+      color: rgba(28,43,58,0.38);
+      text-align: center;
+    }
+
+    /* ── Stop button (hidden — orb handles stopping) ── */
+    #stop-btn { display: none !important; }
+
+    /* ── "Click to stop" hint below orb ── */
+    .orb-stop-hint {
+      display: none;
+      font-size: 13px;
+      font-weight: 600;
+      color: #E05C5C;
+      letter-spacing: 0.05em;
+      text-align: center;
+    }
+    #orb[data-state="LISTENING"]        ~ .orb-stop-hint,
+    #orb[data-state="LISTENING_ANSWER"] ~ .orb-stop-hint { display: block; }
+
+    /* ── Meal log zone ── */
+    .meal-log-zone {
+      flex: 1 1 auto;
+      overflow-y: auto;
+      padding: 18px 20px 24px;
+      scrollbar-width: thin;
+      scrollbar-color: rgba(28,43,58,0.1) transparent;
+    }
+    .meal-log-header {
+      font-family: 'FK Grotesk', 'Space Grotesk', sans-serif;
+      font-size: 11px;
+      font-weight: 600;
+      letter-spacing: 0.10em;
+      text-transform: uppercase;
+      color: rgba(28,43,58,0.58);
+      margin-bottom: 14px;
+    }
+
+    /* ── Empty state ── */
+    .empty-state {
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      min-height: 140px;
+      text-align: center;
+      color: rgba(28,43,58,0.32);
+      font-size: 14px;
+      line-height: 1.65;
+      gap: 10px;
+    }
+    .empty-state svg { opacity: 0.25; }
+
+    /* ── Meal cards ── */
+    .meal-card {
+      display: flex;
+      align-items: stretch;
+      background: rgba(255,255,255,0.75);
+      border: 1px solid rgba(28,43,58,0.06);
+      border-radius: 16px;
+      overflow: hidden;
+      box-shadow: 0 2px 12px rgba(28,43,58,0.05);
+      margin-bottom: 10px;
+      opacity: 0;
+      transform: translateY(12px);
+      transition:
+        opacity 0.4s cubic-bezier(0.34,1.56,0.64,1),
+        transform 0.4s cubic-bezier(0.34,1.56,0.64,1);
+    }
+    .meal-card.entered {
+      opacity: 1;
+      transform: translateY(0);
+    }
+    .card-accent { width: 3px; flex-shrink: 0; }
+    .card-body {
+      flex: 1;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      padding: 12px 14px;
+      gap: 12px;
+    }
+    .card-left { flex: 1; min-width: 0; }
+    .card-meal-name {
+      font-family: 'FK Grotesk', 'Space Grotesk', sans-serif;
+      font-size: 14px;
+      font-weight: 600;
+      color: #1C2B3A;
+      letter-spacing: -0.01em;
+      margin-bottom: 4px;
+      white-space: nowrap;
+      overflow: hidden;
+      text-overflow: ellipsis;
+    }
+    .card-macros {
+      font-size: 11.5px;
+      color: rgba(28,43,58,0.65);
+    }
+    .card-right {
+      display: flex;
+      flex-direction: column;
+      align-items: flex-end;
+      gap: 5px;
+      flex-shrink: 0;
+    }
+    .card-calories {
+      font-family: 'FK Grotesk', 'Space Grotesk', sans-serif;
+      font-size: 16px;
+      font-weight: 700;
+      color: #20B8CD;
+      letter-spacing: -0.03em;
+    }
+    .card-satiety-pill {
+      font-size: 11px;
+      font-weight: 600;
+      border-radius: 20px;
+      padding: 3px 9px;
+      letter-spacing: 0.02em;
+    }
+
+    /* Tier accent + pill colors */
+    .tier-low  .card-accent { background: #E05C5C; }
+    .tier-mid  .card-accent { background: #E8A838; }
+    .tier-high .card-accent { background: #20B8CD; }
+
+    .tier-low  .card-satiety-pill { background: rgba(224,92,92,0.12);  color: #D94040; }
+    .tier-mid  .card-satiety-pill { background: rgba(232,168,56,0.14); color: #C07820; }
+    .tier-high .card-satiety-pill { background: rgba(32,184,205,0.12); color: #20B8CD; }
+
+    /* ══════════════════════════════
+       VOICE SELECTOR
+    ══════════════════════════════ */
+    .voice-selector {
+      width: 100%;
+      padding: 12px 20px 14px;
+      border-bottom: 1px solid rgba(28,43,58,0.06);
+      flex-shrink: 0;
+    }
+    .voice-selector-label {
+      font-size: 10px;
+      font-weight: 600;
+      letter-spacing: 0.12em;
+      text-transform: uppercase;
+      color: rgba(28,43,58,0.60);
+      margin-bottom: 8px;
+    }
+    .voice-cards {
+      display: flex;
+      gap: 6px;
+      flex-wrap: wrap;
+    }
+    .voice-card {
+      flex: 1 1 80px;
+      border: 1px solid rgba(0,0,0,0.06);
+      border-radius: 10px;
+      padding: 8px 10px;
+      cursor: pointer;
+      background: transparent;
+      display: flex;
+      flex-direction: column;
+      gap: 6px;
+      transition: border-color 0.2s ease, background 0.2s ease;
+      text-align: left;
+    }
+    .voice-card:hover { background: rgba(32,184,205,0.04); border-color: rgba(32,184,205,0.3); }
+    .voice-card.active {
+      border: 2px solid #20B8CD;
+      background: rgba(32,184,205,0.06);
+    }
+    .voice-card-top {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 4px;
+    }
+    .voice-card-label {
+      font-family: 'FK Grotesk', 'Space Grotesk', sans-serif;
+      font-size: 11px;
+      font-weight: 600;
+      color: #1C2B3A;
+      letter-spacing: -0.01em;
+      white-space: nowrap;
+      overflow: hidden;
+      text-overflow: ellipsis;
+    }
+    .voice-preview-btn {
+      background: none;
+      border: none;
+      cursor: pointer;
+      padding: 2px 4px;
+      font-size: 9px;
+      color: #20B8CD;
+      border-radius: 4px;
+      flex-shrink: 0;
+      transition: background 0.15s ease;
+    }
+    .voice-preview-btn:hover { background: rgba(32,184,205,0.12); }
+    .vw-bars { display: flex; align-items: flex-end; gap: 2px; height: 10px; }
+    .vw-bar {
+      width: 2px;
+      border-radius: 1px;
+      background: rgba(32,184,205,0.5);
+      flex-shrink: 0;
+    }
+
+    /* ══════════════════════════════
+       FIGURE ZONE LABELS
+    ══════════════════════════════ */
+    .figure-svg-wrap {
+      position: relative;
+      display: inline-flex;
+      justify-content: center;
+    }
+    .zone-label {
+      position: absolute;
+      font-size: 10px;
+      letter-spacing: 0.08em;
+      border-radius: 20px;
+      padding: 2px 8px;
+      background: rgba(249,247,244,0.88);
+      pointer-events: none;
+      white-space: nowrap;
+      transform: translateX(-50%);
+      left: 50%;
+      opacity: 0;
+      transition: opacity 0.6s ease;
+      box-shadow: 0 1px 6px rgba(28,43,58,0.08);
+      font-weight: 600;
+    }
+    .zone-label.visible { opacity: 1; }
+
+    /* ══════════════════════════════
+       BMI + MACRO TRACKER PANEL
+    ══════════════════════════════ */
+    .bmi-panel {
+      margin-top: 16px;
+      background: rgba(255,255,255,0.7);
+      border: 1px solid rgba(28,43,58,0.07);
+      border-radius: 16px;
+      padding: 16px;
+      box-shadow: 0 2px 12px rgba(28,43,58,0.04);
+    }
+    .bmi-panel-header {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      margin-bottom: 10px;
+    }
+    .bmi-edit-btn {
+      background: none;
+      border: 1px solid rgba(28,43,58,0.14);
+      border-radius: 8px;
+      padding: 3px 8px;
+      cursor: pointer;
+      font-size: 12px;
+      color: rgba(28,43,58,0.45);
+      transition: border-color 0.2s ease, color 0.2s ease;
+    }
+    .bmi-edit-btn:hover { border-color: #20B8CD; color: #20B8CD; }
+    .bmi-display-line {
+      font-size: 12px;
+      color: rgba(28,43,58,0.72);
+      margin-bottom: 6px;
+    }
+    .bmi-badge {
+      display: inline-block;
+      font-size: 11px;
+      font-weight: 600;
+      border-radius: 20px;
+      padding: 2px 10px;
+      margin-bottom: 12px;
+      letter-spacing: 0.04em;
+    }
+    .bmi-badge.healthy    { background: rgba(76,175,82,0.14);  color: #3a8c40; }
+    .bmi-badge.overweight { background: rgba(232,168,56,0.16); color: #b07010; }
+    .bmi-badge.obese      { background: rgba(224,92,92,0.14);  color: #c03030; }
+    .bmi-badge.underweight{ background: rgba(116,228,242,0.18);color: #1a8fa0; }
+    .bmi-edit-row {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      margin-bottom: 8px;
+    }
+    .bmi-label { font-size: 12px; color: rgba(28,43,58,0.72); min-width: 80px; font-weight: 500; }
+    .bmi-input {
+      border: 1px solid rgba(28,43,58,0.14);
+      border-radius: 8px;
+      padding: 5px 10px;
+      font-size: 13px;
+      color: #1C2B3A;
+      background: #F9F7F4;
+      width: 90px;
+      outline: none;
+      transition: border-color 0.2s ease;
+    }
+    .bmi-input:focus { border-color: #20B8CD; }
+    .bmi-save-btn {
+      background: #20B8CD;
+      color: #fff;
+      border: none;
+      border-radius: 8px;
+      padding: 6px 16px;
+      font-size: 12px;
+      font-weight: 600;
+      cursor: pointer;
+      transition: background 0.2s ease;
+      margin-top: 4px;
+    }
+    .bmi-save-btn:hover { background: #1aa5b9; }
+    .macro-bars { display: flex; flex-direction: column; gap: 9px; margin-top: 12px; }
+    .macro-bar-row {}
+    .macro-bar-label-row {
+      display: flex;
+      justify-content: space-between;
+      align-items: baseline;
+      margin-bottom: 4px;
+    }
+    .macro-bar-name { font-size: 11px; color: rgba(28,43,58,0.78); font-weight: 600; }
+    .macro-bar-nums { font-size: 11px; color: rgba(28,43,58,0.65); text-align: right; font-weight: 500; }
+    .macro-bar-track {
+      height: 8px;
+      border-radius: 4px;
+      background: rgba(0,0,0,0.06);
+      overflow: visible;
+      position: relative;
+    }
+    .macro-bar-fill {
+      height: 100%;
+      border-radius: 4px;
+      max-width: 100%;
+      transition: width 0.8s cubic-bezier(0.34,1.56,0.64,1);
+    }
+    .macro-bar-fill.over-target {
+      background: #E05C5C !important;
+      animation: macroOverPulse 1.4s ease-in-out infinite;
+    }
+    @keyframes macroOverPulse {
+      0%, 100% { opacity: 0.85; }
+      50% { opacity: 1; }
+    }
+
+    /* ── Meal card insights ── */
+    .card-insights-btn {
+      background: none;
+      border: 1px solid rgba(28,43,58,0.12);
+      border-radius: 6px;
+      padding: 2px 8px;
+      font-size: 10px;
+      font-weight: 600;
+      letter-spacing: 0.05em;
+      text-transform: uppercase;
+      color: rgba(28,43,58,0.38);
+      cursor: pointer;
+      margin-top: 5px;
+      align-self: flex-end;
+      transition: border-color 0.2s ease, color 0.2s ease, background 0.2s ease;
+      white-space: nowrap;
+    }
+    .card-insights-btn:hover {
+      border-color: rgba(32,184,205,0.45);
+      color: #20B8CD;
+      background: rgba(32,184,205,0.04);
+    }
+    .card-insights-btn.open {
+      border-color: rgba(32,184,205,0.35);
+      color: #20B8CD;
+    }
+    .card-insights {
+      max-height: 0;
+      overflow: hidden;
+      transition: max-height 0.38s cubic-bezier(0.4, 0, 0.2, 1), padding 0.28s ease;
+      padding: 0 14px 0 17px;
+      border-top: 0px solid rgba(28,43,58,0.06);
+    }
+    .card-insights.open {
+      max-height: 260px;
+      padding: 10px 14px 13px 17px;
+      border-top-width: 1px;
+    }
+    .insights-list {
+      list-style: none;
+      display: flex;
+      flex-direction: column;
+      gap: 7px;
+    }
+    .insight-item {
+      font-size: 12px;
+      line-height: 1.55;
+      color: rgba(28,43,58,0.68);
+      padding-left: 20px;
+      position: relative;
+    }
+    .insight-item::before {
+      position: absolute;
+      left: 0;
+      font-size: 11px;
+      font-weight: 700;
+      top: 1px;
+    }
+    .insight-good::before { content: '✓'; color: #4CAF82; }
+    .insight-warn::before { content: '!'; color: #E05C5C; }
+    .insight-tip::before  { content: '→'; color: #20B8CD; }
+
+    /* ── Mobile layout ── */
+    @media (max-width: 768px) {
+      .dashboard-main {
+        grid-template-columns: 1fr;
+        height: auto;
+        overflow: visible;
+      }
+      body { overflow-y: auto; }
+      .figure-panel {
+        border-right: none;
+        border-bottom: 1px solid rgba(28,43,58,0.06);
+        min-height: 340px;
+        padding: 28px 20px;
+      }
+      .right-panel { overflow: visible; }
+      .meal-log-zone { overflow: visible; }
+    }
+  </style>
+</head>
+<body>
+
+<!-- ══════════════════════════════════════
+     NAVBAR
+══════════════════════════════════════ -->
+<nav class="nav-glass fixed top-0 left-0 right-0 z-50">
+  <div class="max-w-7xl mx-auto px-6 h-16 flex items-center justify-between">
+
+    <!-- Logo lockup -->
+    <a href="/" class="flex items-center gap-2.5 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-teal rounded-xl">
+      <div class="w-9 h-9 rounded-xl overflow-hidden flex-shrink-0" style="box-shadow:0 2px 10px rgba(28,43,58,0.18);">
+        <img src="brand_assets/logos/logo5.png" alt="Satiate" class="w-full h-full object-cover" />
+      </div>
+      <span class="font-display font-semibold text-xl" style="color:#1C2B3A; letter-spacing:-0.035em;">satiate</span>
+    </a>
+
+    <!-- Center: Today label + Patterns link -->
+    <div class="hidden md:flex items-center gap-6">
+      <span class="section-label">Today's Log</span>
+      <a href="/patterns.html"
+        style="font-size:13px;font-weight:500;color:rgba(28,43,58,0.52);text-decoration:none;transition:color 0.2s ease;"
+        onmouseover="this.style.color='#20B8CD'" onmouseout="this.style.color='rgba(28,43,58,0.52)'">Patterns</a>
+    </div>
+
+    <!-- User controls -->
+    <div class="flex items-center gap-3">
+      <img id="user-avatar" src="" alt="avatar"
+        class="w-8 h-8 rounded-full object-cover flex-shrink-0"
+        style="border: 2px solid rgba(32,184,205,0.28); background:#E0F8FB;" />
+      <button id="signout-btn"
+        class="btn-ghost font-display font-medium px-4 py-2 rounded-full"
+        style="font-size:13px; letter-spacing:-0.01em;">
+        Sign Out
+      </button>
+    </div>
+  </div>
+</nav>
+
+
+<!-- ══════════════════════════════════════
+     MAIN DASHBOARD
+══════════════════════════════════════ -->
+<main class="dashboard-main">
+
+  <!-- ══ LEFT: Figure panel ══ -->
+  <div class="figure-panel">
+
+    <!-- Satiety waterline tag — JS positions this vertically at the fill top -->
+    <div id="satiety-tag" style="
+      position: absolute;
+      display: flex;
+      align-items: center;
+      gap: 0;
+      opacity: 0;
+      transition: top 1.2s cubic-bezier(0.34,1.56,0.64,1), opacity 0.4s ease;
+      pointer-events: none;
+      z-index: 10;
+      transform: translateY(-50%);
+    ">
+      <div style="width:18px; height:1px; background:rgba(32,184,205,0.45); flex-shrink:0;"></div>
+      <div style="
+        background: rgba(32,184,205,0.10);
+        border: 1px solid rgba(32,184,205,0.32);
+        border-radius: 20px;
+        padding: 5px 11px;
+        font-family: 'FK Grotesk','Space Grotesk',sans-serif;
+        font-size: 10px;
+        font-weight: 700;
+        color: #20B8CD;
+        letter-spacing: 0.05em;
+        white-space: nowrap;
+      ">you're <span id="satiety-tag-pct">—</span>% full</div>
+    </div>
+
+    <div class="figure-wrapper">
+      <!-- Glow bloom behind figure -->
+      <div class="figure-glow"></div>
+
+      <!-- SVG Human figure — zone-split for intelligent figure -->
+      <div class="figure-svg-wrap">
+        <svg id="figure-svg"
+          viewBox="0 0 200 500"
+          xmlns="http://www.w3.org/2000/svg"
+          style="filter:drop-shadow(0 0 20px rgba(32,184,205,0.22));">
+          <defs>
+            <!-- Stroke gradient -->
+            <linearGradient id="dashStrokeG" x1="0" y1="0" x2="0" y2="480" gradientUnits="userSpaceOnUse">
+              <stop offset="0%"   stop-color="#1C2B3A" stop-opacity="0.92"/>
+              <stop offset="100%" stop-color="#1C2B3A" stop-opacity="0.50"/>
+            </linearGradient>
+            <!-- Satiety fill gradient: rich teal at bottom → light teal at top -->
+            <linearGradient id="tealBodyFill" x1="0" y1="500" x2="0" y2="0" gradientUnits="userSpaceOnUse">
+              <stop offset="0%"   stop-color="#20B8CD" stop-opacity="0.92"/>
+              <stop offset="42%"  stop-color="#20B8CD" stop-opacity="0.75"/>
+              <stop offset="100%" stop-color="#74E4F2" stop-opacity="0.42"/>
+            </linearGradient>
+            <!-- Body clip path — human silhouette (shared by all zones) -->
+            <clipPath id="dashBodyClip">
+              <ellipse cx="100" cy="44" rx="28" ry="33"/>
+              <path d="M76,74 C62,79 48,93 46,112 L42,198 C41,210 49,219 61,220 L139,220 C151,219 159,210 158,198 L154,112 C152,93 138,79 124,74 C114,70 86,70 76,74 Z"/>
+              <path d="M50,97 C38,103 26,118 26,136 L20,220 C19,230 26,238 36,238 L48,236 C46,218 50,204 62,193 L64,130 L58,99 Z"/>
+              <path d="M150,97 L142,99 L138,130 L140,193 C152,204 156,218 154,236 L166,238 C176,238 183,230 182,220 L176,136 C176,118 164,103 150,97 Z"/>
+              <path d="M60,217 L44,222 L40,328 L36,456 C35,465 41,472 51,472 L66,472 C76,472 81,464 79,455 L75,328 L82,270 L82,217 Z"/>
+              <path d="M140,217 L118,217 L118,270 L125,328 L121,455 C119,464 124,472 134,472 L149,472 C159,472 165,465 164,456 L160,328 L156,222 Z"/>
+            </clipPath>
+          </defs>
+
+          <!-- Layer 1: Body shell (very faint fill + outline strokes) -->
+          <ellipse cx="100" cy="44" rx="28" ry="33"
+            fill="rgba(28,43,58,0.09)" stroke="url(#dashStrokeG)" stroke-width="1.8"/>
+          <path d="M76,74 C62,79 48,93 46,112 L42,198 C41,210 49,219 61,220 L139,220 C151,219 159,210 158,198 L154,112 C152,93 138,79 124,74 C114,70 86,70 76,74 Z"
+            fill="rgba(28,43,58,0.09)" stroke="url(#dashStrokeG)" stroke-width="1.8"/>
+          <path d="M50,97 C38,103 26,118 26,136 L20,220 C19,230 26,238 36,238 L48,236 C46,218 50,204 62,193 L64,130 L58,99 Z"
+            fill="rgba(28,43,58,0.09)" stroke="url(#dashStrokeG)" stroke-width="1.8"/>
+          <path d="M150,97 L142,99 L138,130 L140,193 C152,204 156,218 154,236 L166,238 C176,238 183,230 182,220 L176,136 C176,118 164,103 150,97 Z"
+            fill="rgba(28,43,58,0.09)" stroke="url(#dashStrokeG)" stroke-width="1.8"/>
+          <path d="M60,217 L44,222 L40,328 L36,456 C35,465 41,472 51,472 L66,472 C76,472 81,464 79,455 L75,328 L82,270 L82,217 Z"
+            fill="rgba(28,43,58,0.09)" stroke="url(#dashStrokeG)" stroke-width="1.8"/>
+          <path d="M140,217 L118,217 L118,270 L125,328 L121,455 C119,464 124,472 134,472 L149,472 C159,472 165,465 164,456 L160,328 L156,222 Z"
+            fill="rgba(28,43,58,0.09)" stroke="url(#dashStrokeG)" stroke-width="1.8"/>
+
+          <!-- Layer 2: Satiety fill — teal bottom-to-top, driven by avg satiety score -->
+          <g id="satiety-fill" clip-path="url(#dashBodyClip)">
+            <rect id="fill-rect" x="0" y="0" width="200" height="500"
+              fill="url(#tealBodyFill)"
+              style="transform: translateY(500px);"/>
+          </g>
+
+        </svg>
+
+      </div>
+
+      <!-- Three stat pills -->
+      <div class="stat-pills">
+        <div class="stat-pill">
+          <div id="stat-calories" class="stat-val">—</div>
+          <div class="stat-lbl">kcal</div>
+        </div>
+        <div class="stat-pill">
+          <div id="stat-protein" class="stat-val teal">—</div>
+          <div class="stat-lbl">protein</div>
+        </div>
+        <div class="stat-pill">
+          <div id="stat-satiety" class="stat-val teal">—</div>
+          <div class="stat-lbl">satiety</div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+
+  <!-- ══ RIGHT: Orb + Meal log ══ -->
+  <div class="right-panel">
+
+    <!-- Voice Selector — above Orb, full-width strip -->
+    <div class="voice-selector">
+      <div class="voice-selector-label">Voice</div>
+      <div id="voice-cards" class="voice-cards">
+        <!-- Populated by loadVoices() in dashboard.js -->
+      </div>
+    </div>
+
+    <!-- Orb zone -->
+    <div class="orb-zone">
+
+      <div id="orb" data-state="IDLE">
+        <!-- Animation layers (paint below the button) -->
+        <div class="orb-pulse-ring"></div>
+
+        <!-- Dashed rotating arc (SVG) -->
+        <svg class="orb-arc-svg" viewBox="0 0 120 120"
+          style="position:absolute; inset:0; width:100%; height:100%; border-radius:0;">
+          <circle cx="60" cy="60" r="56.5"
+            fill="none"
+            stroke="#20B8CD"
+            stroke-width="2.5"
+            stroke-dasharray="13 7"
+            stroke-linecap="round"
+            opacity="0.75"/>
+        </svg>
+
+        <!-- Three ripple rings (staggered via negative delay) -->
+        <div class="orb-ripple orb-ripple-a"></div>
+        <div class="orb-ripple orb-ripple-b"></div>
+        <div class="orb-ripple orb-ripple-c"></div>
+
+        <!-- The mic button (topmost via z-index) -->
+        <button id="mic-btn" aria-label="Log a meal">
+          <!-- IDLE: mic icon -->
+          <span class="orb-icon icon-mic">
+            <svg width="26" height="26" viewBox="0 0 24 24" fill="none"
+              stroke="#20B8CD" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round">
+              <path d="M12 1a3 3 0 0 0-3 3v8a3 3 0 0 0 6 0V4a3 3 0 0 0-3-3z"/>
+              <path d="M19 10v2a7 7 0 0 1-14 0v-2"/>
+              <line x1="12" y1="19" x2="12" y2="23"/>
+              <line x1="8"  y1="23" x2="16" y2="23"/>
+            </svg>
+          </span>
+
+          <!-- LISTENING / LISTENING_ANSWER: waveform -->
+          <span class="orb-icon icon-wave">
+            <div class="orb-wave-bar"></div>
+            <div class="orb-wave-bar"></div>
+            <div class="orb-wave-bar"></div>
+            <div class="orb-wave-bar"></div>
+            <div class="orb-wave-bar"></div>
+          </span>
+
+          <!-- PROCESSING / GEMINI: bouncing dots -->
+          <span class="orb-icon icon-process">
+            <div class="process-dot"></div>
+            <div class="process-dot"></div>
+            <div class="process-dot"></div>
+          </span>
+
+          <!-- TTS_SPEAKING: speaker -->
+          <span class="orb-icon icon-speak">
+            <svg width="26" height="26" viewBox="0 0 24 24" fill="none"
+              stroke="#20B8CD" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round">
+              <polygon points="11 5 6 9 2 9 2 15 6 15 11 19 11 5"/>
+              <path d="M19.07 4.93a10 10 0 0 1 0 14.14"/>
+              <path d="M15.54 8.46a5 5 0 0 1 0 7.07"/>
+            </svg>
+          </span>
+        </button>
+      </div>
+
+      <!-- Status label -->
+      <div id="status-label">idle</div>
+
+      <!-- "Click to stop" hint — appears in LISTENING states via CSS sibling selector -->
+      <div class="orb-stop-hint">click to stop</div>
+
+      <!-- Stop button (hidden; orb now handles stopping) -->
+      <button id="stop-btn" aria-label="Stop recording">
+        <svg width="10" height="10" viewBox="0 0 10 10">
+          <rect x="0" y="0" width="10" height="10" rx="2" fill="currentColor"/>
+        </svg>
+        Stop
+      </button>
+
+    </div>
+
+    <!-- Meal log zone -->
+    <div class="meal-log-zone">
+      <div class="meal-log-header">Today's Meals</div>
+      <div id="meal-log">
+        <div class="empty-state" id="empty-state">
+          <svg width="32" height="32" viewBox="0 0 24 24" fill="none"
+            stroke="#1C2B3A" stroke-width="1.4" stroke-linecap="round">
+            <path d="M12 1a3 3 0 0 0-3 3v8a3 3 0 0 0 6 0V4a3 3 0 0 0-3-3z"/>
+            <path d="M19 10v2a7 7 0 0 1-14 0v-2"/>
+            <line x1="12" y1="19" x2="12" y2="23"/>
+            <line x1="8"  y1="23" x2="16" y2="23"/>
+          </svg>
+          Tap the orb to log<br/>your first meal
+        </div>
+      </div>
+
+      <!-- BMI + Macro Tracker Panel -->
+      <div class="bmi-panel" id="bmi-panel">
+        <div class="bmi-panel-header">
+          <span class="section-label">Your Goals</span>
+          <button id="bmi-edit-btn" class="bmi-edit-btn" aria-label="Edit stats">✎</button>
+        </div>
+
+        <!-- Display mode -->
+        <div id="bmi-display">
+          <div class="bmi-display-line" id="bmi-display-line">Set your stats to personalize targets</div>
+          <div id="bmi-badge" class="bmi-badge" style="display:none;"></div>
+        </div>
+
+        <!-- Edit mode -->
+        <div id="bmi-edit" style="display:none;">
+          <div class="bmi-edit-row">
+            <label class="bmi-label" for="bmi-height">Height (in)</label>
+            <input type="number" id="bmi-height" class="bmi-input" placeholder="70" min="48" max="96" />
+          </div>
+          <div class="bmi-edit-row">
+            <label class="bmi-label" for="bmi-weight">Weight (lb)</label>
+            <input type="number" id="bmi-weight" class="bmi-input" placeholder="160" min="50" max="500" />
+          </div>
+          <button id="bmi-save-btn" class="bmi-save-btn">Save</button>
+        </div>
+
+        <!-- Macro progress bars -->
+        <div class="macro-bars" id="macro-bars">
+          <div class="macro-bar-row">
+            <div class="macro-bar-label-row">
+              <span class="macro-bar-name">Protein</span>
+              <span class="macro-bar-nums" id="bar-nums-protein">— / —g</span>
+            </div>
+            <div class="macro-bar-track">
+              <div class="macro-bar-fill" id="bar-protein" style="width:0%; background:#4CAF82;"></div>
+            </div>
+          </div>
+          <div class="macro-bar-row">
+            <div class="macro-bar-label-row">
+              <span class="macro-bar-name">Carbs</span>
+              <span class="macro-bar-nums" id="bar-nums-carbs">— / —g</span>
+            </div>
+            <div class="macro-bar-track">
+              <div class="macro-bar-fill" id="bar-carbs" style="width:0%; background:#E8A838;"></div>
+            </div>
+          </div>
+          <div class="macro-bar-row">
+            <div class="macro-bar-label-row">
+              <span class="macro-bar-name">Fat</span>
+              <span class="macro-bar-nums" id="bar-nums-fat">— / —g</span>
+            </div>
+            <div class="macro-bar-track">
+              <div class="macro-bar-fill" id="bar-fat" style="width:0%; background:#7B9EAD;"></div>
+            </div>
+          </div>
+          <div class="macro-bar-row">
+            <div class="macro-bar-label-row">
+              <span class="macro-bar-name">Fibre</span>
+              <span class="macro-bar-nums" id="bar-nums-fiber">— / —g</span>
+            </div>
+            <div class="macro-bar-track">
+              <div class="macro-bar-fill" id="bar-fiber" style="width:0%; background:#20B8CD;"></div>
+            </div>
+          </div>
+          <div class="macro-bar-row">
+            <div class="macro-bar-label-row">
+              <span class="macro-bar-name">Calories</span>
+              <span class="macro-bar-nums" id="bar-nums-calories">— / —</span>
+            </div>
+            <div class="macro-bar-track">
+              <div class="macro-bar-fill" id="bar-calories" style="width:0%; background:#1C2B3A;"></div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+    </div>
+
+  </div>
+</main>
+
+
+<!-- Hidden elements preserved for dashboard.js DOM references -->
+<div id="status"     style="display:none;"></div>
+<div id="transcript" style="display:none;"></div>
+
+<!-- STEP5 ANCHOR -->
+
+<script>
+  window.ENV = {
+    SUPABASE_URL: 'https://wltqzakjhlwtyjgwbcfu.supabase.co',
+    SUPABASE_ANON_KEY: 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6IndsdHF6YWtqaGx3dHlqZ3diY2Z1Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzE2ODUwNTQsImV4cCI6MjA4NzI2MTA1NH0.fanBBsr4h4nCsmWkDguS9eLWaXyB0feo7OOtuu3tYqE',
+  };
+</script>
+
+<script type="module">
+  import { getUser, signOut } from './js/auth.js';
+  import './js/dashboard.js';
+
+  const user = await getUser();
+  if (!user) {
+    window.location.replace('/?auth_required=true');
+  } else {
+    const avatar = document.getElementById('user-avatar');
+    if (user.user_metadata?.avatar_url) avatar.src = user.user_metadata.avatar_url;
+    document.getElementById('signout-btn').addEventListener('click', signOut);
+  }
+</script>
+
+<script>
+  // ── Satiety waterline tag ──
+  // Watches #fill-rect transform and floats the tag at the fill top edge.
+  (function() {
+    const fillRect  = document.getElementById('fill-rect');
+    const figPanel  = document.querySelector('.figure-panel');
+    const tag       = document.getElementById('satiety-tag');
+    const tagPct    = document.getElementById('satiety-tag-pct');
+    if (!fillRect || !figPanel || !tag || !tagPct) return;
+
+    function updateTag() {
+      const rawTransform = fillRect.style.transform || '';
+      const match = rawTransform.match(/translateY\(([\d.]+)px\)/);
+      if (!match) return;
+
+      const ty = parseFloat(match[1]); // CSS px the rect is shifted down
+
+      const svgEl    = document.getElementById('figure-svg');
+      const svgRect  = svgEl.getBoundingClientRect();
+      const panelRect = figPanel.getBoundingClientRect();
+
+      // The top edge of the visible fill in viewport-y space
+      const fillTopViewport = svgRect.top + ty;
+
+      // Hide if fill hasn't risen into the SVG bounds yet
+      if (fillTopViewport >= svgRect.bottom - 8) {
+        tag.style.opacity = '0';
+        return;
+      }
+
+      // Vertical position relative to figure-panel
+      const topInPanel = fillTopViewport - panelRect.top;
+      const clamped    = Math.max(12, Math.min(topInPanel, panelRect.height - 28));
+
+      // Horizontal: just right of the SVG's right edge
+      const svgRightInPanel = svgRect.right - panelRect.left;
+      tag.style.left = (svgRightInPanel + 6) + 'px';
+      tag.style.top  = clamped + 'px';
+      tag.style.opacity = '1';
+
+      // Update percentage
+      const pct = Math.max(0, Math.min(100, Math.round((1 - ty / 500) * 100)));
+      tagPct.textContent = pct;
+    }
+
+    // Watch fill-rect style attribute for changes set by dashboard.js
+    const mo = new MutationObserver(updateTag);
+    mo.observe(fillRect, { attributes: true, attributeFilter: ['style'] });
+
+    // Also re-position on window resize
+    window.addEventListener('resize', updateTag, { passive: true });
+
+    // Initial call after DOM paint
+    requestAnimationFrame(updateTag);
+  })();
+</script>
+</body>
+</html>
