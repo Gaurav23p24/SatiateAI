@@ -449,7 +449,7 @@ app.use(express.static(__dirname));
 export { app };
 
 const PORT = process.env.PORT || 3000;
-if (fileURLToPath(import.meta.url) === process.argv[1]) {
+if (!process.env.NETLIFY) {
   app.listen(PORT, () => {
     console.log(`Satiate server running at http://localhost:${PORT}`);
   });
