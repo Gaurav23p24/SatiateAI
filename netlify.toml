@@ -1,10 +1,31 @@
 [build]
-  command   = "npm install"
-  publish   = "."
-  functions = "netlify/functions"
+  command = "npm install"
+  publish = "."
+
+[functions]
+  directory = "netlify/functions"
+  node_bundler = "esbuild"
 
 [[redirects]]
-  from   = "/api/*"
-  to     = "/.netlify/functions/api"
+  from   = "/api/voices"
+  to     = "/.netlify/functions/voices"
+  status = 200
+  force  = true
+
+[[redirects]]
+  from   = "/api/tts"
+  to     = "/.netlify/functions/tts"
+  status = 200
+  force  = true
+
+[[redirects]]
+  from   = "/api/stt"
+  to     = "/.netlify/functions/stt"
+  status = 200
+  force  = true
+
+[[redirects]]
+  from   = "/api/chat"
+  to     = "/.netlify/functions/chat"
   status = 200
   force  = true
