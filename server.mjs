@@ -446,7 +446,11 @@ app.get('/auth/callback.html', (req, res) => {
 // Static files for everything else
 app.use(express.static(__dirname));
 
+export { app };
+
 const PORT = process.env.PORT || 3000;
-app.listen(PORT, () => {
-  console.log(`Satiate server running at http://localhost:${PORT}`);
-});
+if (fileURLToPath(import.meta.url) === process.argv[1]) {
+  app.listen(PORT, () => {
+    console.log(`Satiate server running at http://localhost:${PORT}`);
+  });
+}
